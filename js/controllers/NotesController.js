@@ -25,21 +25,24 @@ Ext.regController('NotesController', {
 	},
 
 	deleteNote : function(record) {
-		console.log(record);
 		var currentNote = record;
 		var notesList = this.notesListContainer.list;
 		var notesStore = notesList.getStore();
 
+		// Find the record in the store and remove it.
 		if(notesStore.findRecord('id', currentNote.data.id)) {
 			notesStore.remove(currentNote);
 		}
+
+		// Make the removal permanent
 		notesStore.sync();
+
+		// Re-render the notes list and make the list view active.
 		notesList.refresh();
 		this.application.viewport.setActiveItem(this.notesListContainer, {type:'slide', direction:'right'});
 	},
 
 	editNote : function(record) {
-		console.log(record);
 		var selectedNote = record;
 		this.noteEditor.load(selectedNote);
 
@@ -47,8 +50,6 @@ Ext.regController('NotesController', {
 	},
 
 	addNewNote : function(btn, evt) {
-		console.log("In NotesController.addNewNote()");
-
 		var now = new Date();
 		var noteId = now.getTime();
 		var note = Ext.ModelMgr.create({
@@ -86,7 +87,6 @@ Ext.regController('NotesController', {
 		var notesList = this.notesListContainer.list;
 		var notesStore = notesList.getStore();
 		if(notesStore.findRecord('id', currentNote.data.id) === null) {
-			console.log("Adding currentNote to the store");
 			notesStore.add(currentNote);
 		}
 

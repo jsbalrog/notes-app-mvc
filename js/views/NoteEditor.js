@@ -1,6 +1,5 @@
 NotesApp.views.NoteEditor = Ext.extend(Ext.form.FormPanel, {
 	id		: 'noteEditor',
-//	html	: 'This is the note editor page',
 
 	initComponent: function() {
 		this.noteEditorTopToolbar = new Ext.Toolbar({
@@ -75,18 +74,15 @@ NotesApp.views.NoteEditor = Ext.extend(Ext.form.FormPanel, {
 	},
 
 	deleteNote : function() {
-		console.log("In deleteNote");
-		// Get the current record
+		// Fire an event with the current record
 		this.fireEvent("deleteNote", this.getRecord());
 	},
 	
 	saveNote : function(btn, cmp) {
-		console.log('In NoteEditor.saveNote()');
 		this.fireEvent("saveNote", this.getRecord(), cmp);
 	},
 	
 	backToHome : function(btn, evt) {
-		console.log("In NoteEditor.backToHome");
 		this.fireEvent("backToHome", btn, evt);
 	}
 });
