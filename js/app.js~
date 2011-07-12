@@ -1,0 +1,233 @@
+/**
+ * Instantiate an application. This automatically creates a global <name>
+ * variable (here, 'NotesApp') along with the following namespaces:
+ * - NotesApp
+ * - NotesApp.views
+ * - NotesApp.controllers
+ * - NotesApp.models
+ * - NotesApp.stores
+ */
+Ext.regApplication('NotesApp',{
+	name		: 'NotesApp',
+	useLoadMask	: true,
+	// launch is called only once.
+	launch		: function() {
+		/**
+ 	 	 * Instantiate a model.
+ 	 	 */
+		Ext.regModel('Note', {
+			idProperty	: 'id',
+			fields		: [
+				{ name: 'id', type: 'int' },
+				{ name: 'date', type: 'date', dateFormat: 'c' },
+				{ name: 'title', type: 'string' },
+				{ name: 'narrative', type: 'string' }
+			],
+			validations: [
+				{ type: 'presence', field: 'id' },
+				{ type: 'presence', field: 'title', message: 'Please enter a title for this note.' }
+			]
+		});
+
+		/**
+ 	 	 * Instantiate a storage cache by registering a store with the framework's
+ 	 	 * Store Manager.
+ 	 	 */
+		Ext.regStore('NotesStore', {
+			model	: 'Note',
+			sorters	: [{
+				property	: 'date',
+				direction	: 'DESC'
+			}],
+			// Define our proxy as an instance of Ext.data.LocalStorageProxy, which uses
+			// HTML5 localStorage API.
+			proxy	: {
+				type	: 'localstorage',
+				id		: 'notes-app-localstore'
+			},
+			getGroupString: function(record) {
+				if(record && record.data.date) {
+					return record.get('date').toDateString();
+				} else {
+					return '';
+				}
+			}
+		});
+	
+	
+		/**
+		 * Instantiate the Note Editor's top toolbar.
+		 */
+		NotesApp.views.noteEditorTopToolbar = new Ext.Toolbar({
+			title	: 'Edit Note',
+			items	: [
+				{
+					text	: 'Home',
+					ui		: 'back',
+					handler	: function() {
+						var notesList = NotesApp.views.notesList;
+						notesList.getSelectionModel().deselectAll();
+						NotesApp.views.viewport.setActiveItem('notesListContainer', { type: 'slide', direction: 'right' });
+					}
+				},
+				{ xtype	: 'spacer' },
+				{
+					text	: 'Save',
+					ui		: 'action',
+					handler	: function() {
+						// Get a reference to the Note Editor form panel.
+						var noteEditor = NotesApp.views.noteEditor;
+						// Get a reference to the note model loaded into the form.
+						var currentNote = noteEditor.getRecord();
+						// Update the note with the values in the form fields.
+						noteEditor.updateRecord(currentNote);
+						// Validate the updated model.
+						var errors = currentNote.validate();
+						if(!errors.isValid()) {
+							// Look up the message for this field
+							Ext.Msg.alert('Wait!',
+									errors.getByField('title')[0].message, Ext.emptyFn);
+							return;
+						}
+						var notesList = NotesApp.views.notesList;
+						var notesStore = notesList.getStore();
+						
+						// Look up the note in the cache, and add to the cache if doesn't already exist.
+						if(notesStore.findRecord('id', currentNote.data.id) === null) {
+							notesStore.add(currentNote);
+						}
+						notesStore.sync();
+						notesStore.sort([{ property: 'date', direction: 'DESC'}]);
+						notesList.refresh();
+						NotesApp.views.viewport.setActiveItem('notesListContainer', { type: 'slide', direction: 'right' });
+					}
+				}
+			]
+		});
+
+		/**
+		 * Instantiate the Note Editor's bottom toolbar.
+		 */
+		NotesApp.views.noteEditorBottomToolbar = new Ext.Toolbar({
+			dock	: 'bottom',
+			items	: [
+				{ xtype	: 'spacer' },
+				{
+					iconCls	: 'trash',
+					iconMask: true,
+					handler	: function() {
+						// Get reference to current note
+						var currentNote = NotesApp.views.noteEditor.getRecord();
+						var notesList = NotesApp.views.notesList;
+						var notesStore = notesList.getStore();
+						// Use findRecord() to find and remove note loaded on the editor
+						if(notesStore.findRecord('id', currentNote.data.id)) {
+							notesStore.remove(currentNote);
+						}
+						// Call 'sync()' to make the removal permanent
+						notesStore.sync();
+						// Re-render the notes list
+						notesList.refresh();
+						// Make the notes list view active
+						NotesApp.views.viewport.setActiveItem('notesListContainer', { type: 'slide', direction: 'right' });
+						
+					}
+				}
+			]
+		});
+
+		/**
+		 * Instantiate the Edit Note form
+		 */
+		NotesApp.views.noteEditor = new Ext.form.FormPanel({
+			id		: 'noteEditor',
+			items	: [
+				{
+					xtype	: 'textfield',
+					name	: 'title',
+					label	: 'Title',
+					required: true
+				},
+				{
+					xtype	: 'textareafield',
+					name	: 'narrative',
+					label	: 'Narrative'
+				}
+			],
+			dockedItems	: [
+				NotesApp.views.noteEditorTopToolbar,
+				NotesApp.views.noteEditorBottomToolbar
+			]
+		});
+
+		/**
+		 * Create a notes list.
+		 */
+		NotesApp.views.notesList = new Ext.List({
+			id				: 'notesList',
+			store			: 'NotesStore',
+			grouped			: true,
+			emptyText		: '<div style="margin: 5px;">No notes cached.</div>',
+			itemTpl			: '<div class="list-item-title">{title}</div>' +
+			'<div class="list-item-narrative">{narrative}</div>',
+			onItemDisclosure: function(record) {
+				var selectedNote = record;
+				NotesApp.views.noteEditor.load(selectedNote);
+				NotesApp.views.viewport.setActiveItem('noteEditor', {
+					type: 'slide', direction: 'left'
+				});
+			},
+			listeners: {
+				'render': function(thisComponent) {
+					thisComponent.getStore().load();
+				}
+			}
+		});
+
+		// The toolbar for the notes list page.
+		NotesApp.views.notesListToolbar = new Ext.Toolbar({
+			id		: 'notesListToolbar',
+			title	: 'My Notes',
+			layout	: 'hbox',
+			items	: [
+				{ xtype		: 'spacer' },
+				{
+					id		: 'newNoteButton',
+					text	: 'New',
+					ui		: 'action',
+					handler	: function() {
+						var now = new Date();
+						var noteId = now.getTime();
+						// Create a new blank note using ModelMgr.create()
+						var note = Ext.ModelMgr.create({id: noteId, date: now, title: '', narrative: ''}, 'Note');
+						// Load model instance into the note editor form panel (load populates fields with model properties).
+						NotesApp.views.noteEditor.load(note);
+						// Make the Note Editor form panel visible.
+						NotesApp.views.viewport.setActiveItem('noteEditor', {type: 'slide', direction: 'left'});
+					}
+				}
+			]
+		});
+			
+		// The panel for the notes list page. Contains the
+		// toolbar as a docked item.
+		NotesApp.views.notesListContainer = new Ext.Panel({
+			id			: 'notesListContainer',
+			layout		: 'fit',
+			html		: 'This is the notes list container',
+			dockedItems	: [NotesApp.views.notesListToolbar],
+			items		: [NotesApp.views.notesList]
+		});
+
+		
+		// The viewport is a panel that will host
+		// two cards: Notes List and Notes Editor.
+		NotesApp.views.viewport = new Ext.Panel({
+			fullscreen		: true,
+			layout			: 'card',
+			cardAnimation	: 'slide',
+			//html			: 'This is the viewport'
+			items			: [NotesApp.views.notesListContainer, NotesApp.views.noteEditor]
+		});
+	}
+});
