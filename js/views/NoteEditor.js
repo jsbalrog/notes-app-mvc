@@ -35,14 +35,18 @@ NotesApp.views.NoteEditor = Ext.extend(Ext.form.FormPanel, {
 		});
 
 		this.noteEditorBottomToolbar = new Ext.Toolbar({
-			dock: 'bottom',
-			items: [
-				{ xtype: 'spacer' },
+			dock : 'bottom',
+			items : [
+				{ xtype : 'spacer' },
 				{
-					iconCls: 'trash',
-					iconMask: true,
-					handler: function() {
-						// TODO: Delete current note.
+					iconCls : 'trash',
+					iconMask : true,
+					listeners : {
+						scope : this,
+						click : {
+							element : 'el',
+							fn : this.deleteNote
+						}
 					}
 				}
 			]
@@ -50,15 +54,15 @@ NotesApp.views.NoteEditor = Ext.extend(Ext.form.FormPanel, {
 
 		this.items = [
 			{
-				xtype: 'textfield',
-				name: 'title',
-				label: 'Title',
-				required: true
+				xtype : 'textfield',
+				name : 'title',
+				label : 'Title',
+				required : true
 			},
 			{
-				xtype: 'textareafield',
-				name: 'narrative',
-				label: 'Narrative'
+				xtype : 'textareafield',
+				name : 'narrative',
+				label : 'Narrative'
 			}
 		];
 
@@ -68,6 +72,12 @@ NotesApp.views.NoteEditor = Ext.extend(Ext.form.FormPanel, {
 		];
 
 		NotesApp.views.NoteEditor.superclass.initComponent.apply(this, arguments);
+	},
+
+	deleteNote : function() {
+		console.log("In deleteNote");
+		// Get the current record
+		this.fireEvent("deleteNote", this.getRecord());
 	},
 	
 	saveNote : function(btn, cmp) {

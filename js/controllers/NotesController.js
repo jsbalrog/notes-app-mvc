@@ -6,15 +6,48 @@ Ext.regController('NotesController', {
 			xtype: 'notesListContainer',
 			listeners: {
 				scope:	this,
-				addNote: this.addNewNote
+				addNote: this.addNewNote,
+				editNote: this.editNote
 			}	
+		});
+
+		this.noteEditor = this.render({
+			xtype: 'noteEditor',
+			listeners : {
+				scope : this,
+				backToHome : this.backToHome,
+				saveNote : this.saveNote,
+				deleteNote : this.deleteNote
+			}
 		});
 
 		this.application.viewport.setActiveItem(this.notesListContainer);
 	},
 
+	deleteNote : function(record) {
+		console.log(record);
+		var currentNote = record;
+		var notesList = this.notesListContainer.list;
+		var notesStore = notesList.getStore();
+
+		if(notesStore.findRecord('id', currentNote.data.id)) {
+			notesStore.remove(currentNote);
+		}
+		notesStore.sync();
+		notesList.refresh();
+		this.application.viewport.setActiveItem(this.notesListContainer, {type:'slide', direction:'right'});
+	},
+
+	editNote : function(record) {
+		console.log(record);
+		var selectedNote = record;
+		this.noteEditor.load(selectedNote);
+
+		this.application.viewport.setActiveItem(this.noteEditor, {type:'slide', direction:'left'});
+	},
+
 	addNewNote : function(btn, evt) {
-		console.log("In NotesController.newNote()");
+		console.log("In NotesController.addNewNote()");
 
 		var now = new Date();
 		var noteId = now.getTime();
@@ -23,14 +56,6 @@ Ext.regController('NotesController', {
 			date: now,
 			title: '',
 			narrative: ''}, 'Note');
-		this.noteEditor = this.render({
-			xtype: 'noteEditor',
-			listeners : {
-				scope : this,
-				backToHome : this.backToHome,
-				saveNote : this.saveNote
-			}
-		});
 		this.noteEditor.load(note);
 
 		this.application.viewport.setActiveItem(this.noteEditor, {type:'slide', direction:'left'});

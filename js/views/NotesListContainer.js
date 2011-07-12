@@ -28,9 +28,9 @@ NotesApp.views.NotesListContainer = Ext.extend(Ext.Panel, {
 			store: this.store,
 			itemTpl: '<div class="list-item-title">{title}</div>' +
 			'<div class="list-item-narrative">{narrative}</div>',
-			onItemDisclosure: function(record) {
-				// TODO: Render the selected note in the note editor.
-			}
+			listeners: {
+				scope: this,
+				itemtap: this.editNote			}
 		});
 
 		this.dockedItems = [{
@@ -66,6 +66,12 @@ NotesApp.views.NotesListContainer = Ext.extend(Ext.Panel, {
 	addNewNote : function(btn, evt) {
 		console.log("In NotesListContainer.tapNewNoteButton");
 		this.fireEvent('addNote', btn, evt);
+	},
+
+	editNote : function(ctList, itemIdx) {
+		console.log("In editRecord");
+		var note = ctList.store.getAt(itemIdx);
+		this.fireEvent('editNote', note);
 	}
 });
 
